@@ -1,0 +1,154 @@
+/* =============================================================================
+   V004 - Read model dashboard & laporan (SA §1 poin 5, §7 strategi scaling)
+   Dashboard membaca TB_R_* yang di-refresh saat transaksi/approve,
+   bukan agregasi langsung ke tabel transaksi setiap kali dibuka.
+   ============================================================================= */
+SET NOCOUNT ON;
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET XACT_ABORT ON;
+GO
+IF EXISTS (SELECT 1 FROM dbo.TB_S_SCHEMA_VERSION WHERE VERSION_NO = 'V004')
+BEGIN
+    PRINT 'V004 sudah diterapkan, skip.';
+    SET NOEXEC ON;
+END
+GO
+BEGIN TRANSACTION;
+GO
+
+/* FR-11: jumlah asset per kantor x kategori x status */
+CREATE TABLE dbo.TB_R_DASHBOARD_SUMMARY (
+    OFFICE_CD     varchar(3)    NOT NULL,
+    CATEGORY_CD   varchar(3)    NOT NULL,
+    STATUS        varchar(15)   NOT NULL,
+    QTY           int           NOT NULL,
+    REFRESHED_DT  datetime2(0)  NOT NULL,
+    CONSTRAINT PK_TB_R_DASHBOARD_SUMMARY PRIMARY KEY (OFFICE_CD, CATEGORY_CD, STATUS)
+);
+
+/* FR-09 / FR-12: selisih per sesi opname x kategori (tren per periode) */
+CREATE TABLE dbo.TB_R_OPNAME_VARIANCE (
+    OPNAME_ID     int           NOT NULL,
+    CATEGORY_CD   varchar(3)    NOT NULL,
+    QTY_SYSTEM    int           NOT NULL,
+    QTY_FOUND     int           NOT NULL,
+    QTY_MINUS     int           NOT NULL,
+    QTY_PLUS      int           NOT NULL,
+    REFRESHED_DT  datetime2(0)  NOT NULL,
+    CONSTRAINT PK_TB_R_OPNAME_VARIANCE PRIMARY KEY (OPNAME_ID, CATEGORY_CD),
+    CONSTRAINT FK_TB_R_OPNAME_VARIANCE_H FOREIGN KEY (OPNAME_ID) REFERENCES dbo.TB_T_OPNAME_H (OPNAME_ID)
+);
+GO
+
+CREATE PROCEDURE dbo.USP_REFRESH_DASHBOARD_SUMMARY
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    DECLARE @now datetime2(0) = SYSDATETIME();
+
+    BEGIN TRANSACTION;
+    DELETE dbo.TB_R_DASHBOARD_SUMMARY WITH (TABLOCKX);
+    INSERT dbo.TB_R_DASHBOARD_SUMMARY (OFFICE_CD, CATEGORY_CD, STATUS, QTY, REFRESHED_DT)
+    SELECT OFFICE_CD, CATEGORY_CD, STATUS, COUNT(*), @now
+      FROM dbo.TB_M_ASSET
+     GROUP BY OFFICE_CD, CATEGORY_CD, STATUS;
+    COMMIT TRANSACTION;
+END;
+GO
+
+CREATE PROCEDURE dbo.USP_REFRESH_OPNAME_VARIANCE
+    @OPNAME_ID int
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    DECLARE @now datetime2(0) = SYSDATETIME();
+
+    BEGIN TRANSACTION;
+    DELETE dbo.TB_R_OPNAME_VARIANCE WHERE OPNAME_ID = @OPNAME_ID;
+    INSERT dbo.TB_R_OPNAME_VARIANCE (OPNAME_ID, CATEGORY_CD, QTY_SYSTEM, QTY_FOUND, QTY_MINUS, QTY_PLUS, REFRESHED_DT)
+    SELECT x.OPNAME_ID, x.SYS_CATEGORY_CD, x.QTY_SYSTEM, x.QTY_SYSTEM - x.QTY_MINUS, x.QTY_MINUS, x.QTY_PLUS, @now
+      FROM (SELECT OPNAME_ID, SYS_CATEGORY_CD,
+                   QTY_SYSTEM = SUM(CASE WHEN ASSET_NO IS NOT NULL THEN 1 ELSE 0 END),
+                   QTY_MINUS  = SUM(CASE WHEN RESULT = 'TIDAK_DITEMUKAN' THEN 1 ELSE 0 END),
+                   QTY_PLUS   = SUM(CASE WHEN RESULT = 'PLUS' THEN 1 ELSE 0 END)
+              FROM dbo.TB_T_OPNAME_D
+             WHERE OPNAME_ID = @OPNAME_ID
+             GROUP BY OPNAME_ID, SYS_CATEGORY_CD) x;
+    COMMIT TRANSACTION;
+END;
+GO
+
+/* FR-05 / SCR-02: daftar asset dengan nama master (dipakai Dapper untuk list & export) */
+CREATE VIEW dbo.VW_ASSET_LIST
+AS
+SELECT a.ASSET_NO, a.ASSET_NM, a.CATEGORY_CD, c.CATEGORY_NM, a.BRAND_MODEL, a.SERIAL_NO, a.ACQ_DT,
+       a.OFFICE_CD, o.OFFICE_NM, a.USER_ID, u.USER_NM, u.DEPT, a.STATUS, a.CONDITION,
+       a.CREATED_DT, a.UPDATED_DT
+  FROM dbo.TB_M_ASSET a
+  JOIN dbo.TB_M_CATEGORY c ON c.CATEGORY_CD = a.CATEGORY_CD
+  JOIN dbo.TB_M_OFFICE   o ON o.OFFICE_CD   = a.OFFICE_CD
+  LEFT JOIN dbo.TB_M_USER u ON u.USER_ID    = a.USER_ID;
+GO
+
+/* FR-11: KPI per kantor (DISPOSED tidak dihitung dalam total asset aktif) */
+CREATE VIEW dbo.VW_DASHBOARD_KPI
+AS
+SELECT OFFICE_CD,
+       TOTAL        = SUM(CASE WHEN STATUS <> 'DISPOSED' THEN QTY ELSE 0 END),
+       IN_USE       = SUM(CASE WHEN STATUS = 'IN_USE'       THEN QTY ELSE 0 END),
+       AVAILABLE    = SUM(CASE WHEN STATUS = 'AVAILABLE'    THEN QTY ELSE 0 END),
+       UNDER_REPAIR = SUM(CASE WHEN STATUS = 'UNDER_REPAIR' THEN QTY ELSE 0 END),
+       MISSING      = SUM(CASE WHEN STATUS = 'MISSING'      THEN QTY ELSE 0 END),
+       DISPOSED     = SUM(CASE WHEN STATUS = 'DISPOSED'     THEN QTY ELSE 0 END),
+       REFRESHED_DT = MAX(REFRESHED_DT)
+  FROM dbo.TB_R_DASHBOARD_SUMMARY
+ GROUP BY OFFICE_CD;
+GO
+
+/* FR-12 / BR-08: opname approved terakhir per kantor, IS_RED = 1 bila minus > 0 */
+CREATE VIEW dbo.VW_OPNAME_LAST_APPROVED
+AS
+SELECT h.OPNAME_ID, h.OFFICE_CD, o.OFFICE_NM, h.PERIOD, h.QTY_SYSTEM, h.QTY_FOUND, h.QTY_MINUS, h.QTY_PLUS,
+       h.APPROVED_BY, h.APPROVED_DT,
+       IS_RED = CAST(CASE WHEN h.QTY_MINUS > 0 THEN 1 ELSE 0 END AS bit)
+  FROM dbo.TB_T_OPNAME_H h
+  JOIN dbo.TB_M_OFFICE o ON o.OFFICE_CD = h.OFFICE_CD
+ WHERE h.STATUS = 'APPROVED'
+   AND h.PERIOD = (SELECT MAX(h2.PERIOD) FROM dbo.TB_T_OPNAME_H h2
+                    WHERE h2.OFFICE_CD = h.OFFICE_CD AND h2.STATUS = 'APPROVED');
+GO
+
+/* FR-13 / SCR-06: daftar asset minus per sesi + user terakhir (dari snapshot) */
+CREATE VIEW dbo.VW_OPNAME_MINUS
+AS
+SELECT h.OPNAME_ID, h.PERIOD, h.OFFICE_CD, o.OFFICE_NM, h.STATUS AS OPNAME_STATUS,
+       d.ASSET_NO, a.ASSET_NM, d.SYS_CATEGORY_CD AS CATEGORY_CD, c.CATEGORY_NM, a.BRAND_MODEL, a.SERIAL_NO,
+       d.SYS_USER_ID AS LAST_USER_ID, u.USER_NM AS LAST_USER_NM, u.DEPT AS LAST_USER_DEPT,
+       d.REMARK, d.CHECKED_BY, d.CHECKED_DT
+  FROM dbo.TB_T_OPNAME_D d
+  JOIN dbo.TB_T_OPNAME_H h ON h.OPNAME_ID   = d.OPNAME_ID
+  JOIN dbo.TB_M_OFFICE   o ON o.OFFICE_CD   = h.OFFICE_CD
+  JOIN dbo.TB_M_ASSET    a ON a.ASSET_NO    = d.ASSET_NO
+  JOIN dbo.TB_M_CATEGORY c ON c.CATEGORY_CD = d.SYS_CATEGORY_CD
+  LEFT JOIN dbo.TB_M_USER u ON u.USER_ID    = d.SYS_USER_ID
+ WHERE d.RESULT = 'TIDAK_DITEMUKAN';
+GO
+
+/* SA §5: asset yang masih dipegang karyawan non-aktif/resign -> perlu ditarik Admin GA */
+CREATE VIEW dbo.VW_ASSET_TO_RECALL
+AS
+SELECT a.ASSET_NO, a.ASSET_NM, a.OFFICE_CD, a.USER_ID, u.USER_NM, u.DEPT, u.RESIGN_DT, a.STATUS
+  FROM dbo.TB_M_ASSET a
+  JOIN dbo.TB_M_USER u ON u.USER_ID = a.USER_ID
+ WHERE u.IS_ACTIVE = 0;
+GO
+
+INSERT dbo.TB_S_SCHEMA_VERSION (VERSION_NO, DESCRIPTION) VALUES ('V004', N'Read model dashboard & view laporan');
+COMMIT TRANSACTION;
+PRINT 'V004 diterapkan.';
+GO
+SET NOEXEC OFF;
+GO

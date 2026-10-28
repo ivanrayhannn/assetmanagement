@@ -1,0 +1,6 @@
+/* DEV ONLY - hapus database AMS untuk reset lokal. Jangan dijalankan di SIT/UAT/PRD. */
+IF DB_ID(N'AMS_DB') IS NOT NULL
+BEGIN
+    ALTER DATABASE AMS_DB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE AMS_DB;
+END

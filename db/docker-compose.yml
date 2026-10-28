@@ -1,0 +1,23 @@
+# SQL Server 2022 untuk development lokal.
+#   cp db/.env.example db/.env   # isi password
+#   docker compose -f db/docker-compose.yml up -d
+#   AMS_DB_PASSWORD=... SQLCMD="docker exec -i ams-sql /opt/mssql-tools18/bin/sqlcmd" db/scripts/apply.sh --seed --test
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ams-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${AMS_DB_PASSWORD:?isi AMS_DB_PASSWORD di db/.env}
+      MSSQL_PID: Developer
+      TZ: Asia/Jakarta
+    ports:
+      - "1433:1433"
+    volumes:
+      - ams-sql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      retries: 10
+volumes:
+  ams-sql-data:
