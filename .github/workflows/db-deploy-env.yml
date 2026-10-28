@@ -1,0 +1,68 @@
+# Deploy database ke satu environment. Dipanggil oleh db-deploy.yml.
+#
+# Per GitHub Environment (sit / uat / production) siapkan:
+#   vars.AMS_DB_SERVER     contoh: DBSRV-SIT01 atau DBSRV-SIT01\AMS
+#   vars.AMS_DB_NAME       contoh: AMS_DB
+#   secrets.AMS_DB_USER / secrets.AMS_DB_PASSWORD   opsional; kosong = Windows auth
+#                                                   memakai akun service runner (disarankan)
+name: DB Deploy (environment)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      seed:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy DB ke ${{ inputs.environment }}
+    runs-on: [self-hosted, windows, ams-db]
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: db-deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Terapkan migration${{ inputs.seed && ' + seed' || '' }}
+        shell: pwsh
+        env:
+          AMS_DB_SERVER: ${{ vars.AMS_DB_SERVER }}
+          AMS_DB_NAME: ${{ vars.AMS_DB_NAME }}
+          AMS_DB_USER: ${{ secrets.AMS_DB_USER }}
+          SQLCMDPASSWORD: ${{ secrets.AMS_DB_PASSWORD }}   # dibaca sqlcmd langsung, tidak muncul di command line
+          SEED: ${{ inputs.seed }}
+        run: |
+          if (-not $env:AMS_DB_SERVER -or -not $env:AMS_DB_NAME) {
+            throw "Variable AMS_DB_SERVER / AMS_DB_NAME belum diisi di environment '${{ inputs.environment }}'."
+          }
+          $params = @{ Server = $env:AMS_DB_SERVER; Database = $env:AMS_DB_NAME }
+          if ($env:AMS_DB_USER) { $params.User = $env:AMS_DB_USER } else { $params.UseWindowsAuth = $true }
+          if ($env:SEED -eq 'true') { $params.Seed = $true }
+          ./db/scripts/apply.ps1 @params
+
+      - name: Versi schema terpasang
+        shell: pwsh
+        env:
+          AMS_DB_SERVER: ${{ vars.AMS_DB_SERVER }}
+          AMS_DB_NAME: ${{ vars.AMS_DB_NAME }}
+          AMS_DB_USER: ${{ secrets.AMS_DB_USER }}
+          SQLCMDPASSWORD: ${{ secrets.AMS_DB_PASSWORD }}
+        run: |
+          $auth = if ($env:AMS_DB_USER) { @("-U", $env:AMS_DB_USER) } else { @("-E") }
+          $q = "SELECT VERSION_NO, DESCRIPTION, APPLIED_DT FROM dbo.TB_S_SCHEMA_VERSION ORDER BY VERSION_NO"
+          $out = & sqlcmd -S $env:AMS_DB_SERVER -d $env:AMS_DB_NAME @auth -C -b -W -s "|" -Q $q
+          if ($LASTEXITCODE -ne 0) { throw "Gagal membaca TB_S_SCHEMA_VERSION" }
+          $out
+          "### Database ${{ inputs.environment }}: $env:AMS_DB_NAME" >> $env:GITHUB_STEP_SUMMARY
+          '```' >> $env:GITHUB_STEP_SUMMARY
+          $out >> $env:GITHUB_STEP_SUMMARY
+          '```' >> $env:GITHUB_STEP_SUMMARY

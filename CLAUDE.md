@@ -103,6 +103,9 @@ AMS_DB_PASSWORD='...' SQLCMD="docker exec -i ams-sql /opt/mssql-tools18/bin/sqlc
 
 Backend dan frontend: akan ditambahkan di langkah 3 dan 4.
 
+CI/CD: GitHub Actions (`.github/workflows/db-*.yml`), CI → SIT → UAT → Production via self-hosted runner.
+Setup & aturan deploy: `docs/Deployment-CICD.md`.
+
 ## Konvensi kode & git
 
 - C#: nullable enabled, file-scoped namespace, async end-to-end, nama BR di nama test (`BR04_...`).

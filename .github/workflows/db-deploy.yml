@@ -1,0 +1,42 @@
+# Deploy database: CI -> SIT -> UAT -> Production (SA §7 Deployment).
+# - Push ke main yang mengubah db/** otomatis menjalankan rantai ini.
+# - Job berjalan di self-hosted runner Windows di intranet (server DB tidak bisa diakses dari internet).
+# - Gerbang approval UAT & Production diatur lewat "Required reviewers" di GitHub Environments.
+name: DB Deploy
+
+on:
+  push:
+    branches: [main]
+    paths: ["db/migrations/**", "db/seed/**", "db/scripts/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/db-ci.yml
+
+  sit:
+    needs: ci
+    uses: ./.github/workflows/db-deploy-env.yml
+    with:
+      environment: sit
+      seed: true
+    secrets: inherit
+
+  uat:
+    needs: sit
+    uses: ./.github/workflows/db-deploy-env.yml
+    with:
+      environment: uat
+      seed: true
+    secrets: inherit
+
+  production:
+    needs: uat
+    uses: ./.github/workflows/db-deploy-env.yml
+    with:
+      environment: production
+      seed: false          # seed TIDAK pernah masuk produksi
+    secrets: inherit

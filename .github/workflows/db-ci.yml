@@ -1,0 +1,54 @@
+# CI database: terapkan migration + seed + test ke SQL Server 2022 sementara (service container).
+# Dipanggil juga oleh db-deploy.yml sebagai gerbang sebelum deploy.
+name: DB CI
+
+on:
+  push:
+    paths: ["db/**", ".github/workflows/db-*.yml"]
+  pull_request:
+    paths: ["db/**", ".github/workflows/db-*.yml"]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  db-test:
+    name: Migration, seed & BR tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: Ci_Only#Ams2026   # container sekali pakai, bukan kredensial nyata
+          MSSQL_PID: Developer
+        ports: ["1433:1433"]
+    env:
+      AMS_DB_SERVER: localhost
+      AMS_DB_USER: sa
+      AMS_DB_PASSWORD: Ci_Only#Ams2026
+      SQLCMD: docker exec -i ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tunggu SQL Server siap
+        run: |
+          for i in $(seq 1 30); do
+            if $SQLCMD -S localhost -U sa -P "$AMS_DB_PASSWORD" -C -Q "SELECT 1" > /dev/null 2>&1; then
+              echo "SQL Server siap"; exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::SQL Server tidak siap dalam 90 detik"; exit 1
+
+      - name: Migration saja pada database kosong (jalur produksi)
+        run: AMS_DB_NAME=AMS_DB_PRD_CHECK db/scripts/apply.sh
+
+      - name: Migration + seed + test (jalur SIT/UAT)
+        run: AMS_DB_NAME=AMS_DB db/scripts/apply.sh --seed --test
+
+      - name: Jalankan ulang untuk memastikan idempotent
+        run: AMS_DB_NAME=AMS_DB db/scripts/apply.sh --seed --test

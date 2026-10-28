@@ -4,7 +4,8 @@
     .\db\scripts\apply.ps1 -Server "DBSRV01" -Database AMS_DB -UseWindowsAuth
     .\db\scripts\apply.ps1 -Server "localhost,1433" -User sa -Password '***' -Seed -Test
 
-  Butuh sqlcmd (mssql-tools18 atau go-sqlcmd) di PATH. -Seed hanya untuk DEV/SIT/UAT.
+  Butuh sqlcmd (mssql-tools18 atau go-sqlcmd, mendukung flag -C) di PATH. -Seed hanya untuk DEV/SIT/UAT.
+  SQL auth tanpa -Password: sqlcmd membaca password dari env SQLCMDPASSWORD (dipakai pipeline CI/CD).
 #>
 param(
   [string]$Server = "localhost,1433",
@@ -19,7 +20,9 @@ $ErrorActionPreference = "Stop"
 $dbDir = Split-Path -Parent $PSScriptRoot
 
 function Invoke-Sql([string]$db, [string[]]$extra) {
-  $auth = if ($UseWindowsAuth) { @("-E") } else { @("-U", $User, "-P", $Password) }
+  $auth = if ($UseWindowsAuth) { @("-E") }
+          elseif ($Password)   { @("-U", $User, "-P", $Password) }
+          else                 { @("-U", $User) }   # password dari env SQLCMDPASSWORD
   & sqlcmd -S $Server -d $db @auth -C -b -I -W @extra
   if ($LASTEXITCODE -ne 0) { throw "sqlcmd gagal (exit $LASTEXITCODE)" }
 }
