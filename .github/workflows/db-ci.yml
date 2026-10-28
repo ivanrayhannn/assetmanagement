@@ -30,12 +30,16 @@ jobs:
       AMS_DB_SERVER: localhost
       AMS_DB_USER: sa
       AMS_DB_PASSWORD: Ci_Only#Ams2026
-      SQLCMD: docker exec -i ${{ job.services.sqlserver.id }} /opt/mssql-tools18/bin/sqlcmd
     steps:
       - uses: actions/checkout@v4
 
-      - name: Tunggu SQL Server siap
+      # sqlcmd dijalankan di dalam service container (konteks job.* hanya tersedia di level step)
+      - name: Siapkan sqlcmd & tunggu SQL Server siap
+        env:
+          SQL_CONTAINER: ${{ job.services.sqlserver.id }}
         run: |
+          SQLCMD="docker exec -i $SQL_CONTAINER /opt/mssql-tools18/bin/sqlcmd"
+          echo "SQLCMD=$SQLCMD" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
             if $SQLCMD -S localhost -U sa -P "$AMS_DB_PASSWORD" -C -Q "SELECT 1" > /dev/null 2>&1; then
               echo "SQL Server siap"; exit 0
