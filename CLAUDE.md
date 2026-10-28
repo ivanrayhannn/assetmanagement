@@ -7,7 +7,7 @@ dengan kondisi fisik lewat stock opname berkala. Selisih minus otomatis masuk la
 
 - Kebutuhan fungsional: `docs/FSD-AMS.md` (FR-01–FR-13, BR-01–BR-08, data model, UAT TC-01–TC-09)
 - Arsitektur & API: `docs/Solution-Architecture-AMS.md`
-- Prototipe UI: `docs/asset-management.html` (belum ada di repo, akan ditambahkan)
+- Prototipe UI: `docs/asset-management.html`
 - Use case: UC-01 Registrasi & Assignment (termasuk mutasi), UC-02 Stock Opname & Laporan Selisih
 - Kantor: JKT, SBY, BDG. Kategori: LPT, MON, PRN, PRJ, FUR.
 
@@ -101,9 +101,16 @@ Keputusan tambahan:
 AMS_DB_PASSWORD='...' SQLCMD="docker exec -i ams-sql /opt/mssql-tools18/bin/sqlcmd" db/scripts/apply.sh --seed --test
 ```
 
-Backend dan frontend: akan ditambahkan di langkah 3 dan 4.
+```bash
+cd frontend && npm ci && npm test && npm run build   # VITE_API_MODE=demo|http, lihat frontend/README.md
+```
 
-CI/CD: GitHub Actions (`.github/workflows/db-*.yml`), CI → SIT → UAT → Production via self-hosted runner.
+Frontend: komponen hanya memakai interface `AmsApi`. `src/api/demo/service.ts` adalah acuan perilaku BR untuk API .NET
+(kode error & pesan sama); perubahan BR wajib diterapkan di keduanya beserta test-nya. Seed demo = salinan `db/seed`.
+Backend .NET: akan ditambahkan di langkah 3.
+
+CI/CD: GitHub Actions. DB: `db-*.yml` (CI → SIT → UAT → Production via self-hosted runner).
+Web: `web-pages.yml` (test + build, deploy mode demo ke GitHub Pages; data contoh fiktif saja).
 Setup & aturan deploy: `docs/Deployment-CICD.md`.
 
 ## Konvensi kode & git
