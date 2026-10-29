@@ -44,6 +44,11 @@ src/features/           dashboard, assets, tracking, opname, reports
 src/styles/index.css    design system dari prototipe (token light/dark)
 ```
 
+## Modul AI (simulasi)
+
+Menu **AI Insight**: Kesehatan Asset (Admin GA, PIC, Executive), Dokumen AI (Admin GA, PIC), Audit & Anomali (Auditor, Executive).
+Semua berbasis aturan transparan di `src/api/demo/ai-service.ts`, tanpa ML/OCR/LLM. Lihat `docs/AI-AMS-Spec.md`; endpoint usulan di `src/api/http.ts` (`httpAi`).
+
 ## Kontrak API untuk langkah 3 (.NET)
 
 Endpoint SA §4 ditambah endpoint pendukung yang dibutuhkan UI. Error memakai ProblemDetails dengan `code`

@@ -1,3 +1,4 @@
+import type { AiActivity, AnomalyAlert, AssetDocument, AuditCase, MaintenanceRecord, Recommendation, WorkOrder } from '../ai-types';
 import type { Asset, AssetHistory, Assignment, Category, OpnameHeader, OpnameItem, Office, User } from '../types';
 
 /* State demo = cerminan tabel SQL Server (db/migrations). Disimpan di localStorage browser. */
@@ -5,8 +6,19 @@ import type { Asset, AssetHistory, Assignment, Category, OpnameHeader, OpnameIte
 export type OpnameRow = Omit<OpnameHeader, 'qtyChecked'>;
 export type OpnameItemRow = Omit<OpnameItem, 'assetNm'> & { opnameId: number };
 
+export interface PurchaseOrder {
+  poNo: string;
+  vendor: string;
+  description: string;
+  qty: number;
+  unitPrice: number;
+  totalAmount: number;
+  officeCd: string;
+  categoryCd: string;
+}
+
 export interface DemoDb {
-  schema: 1;
+  schema: 2;
   offices: Office[];
   categories: Category[];
   users: User[];
@@ -17,11 +29,23 @@ export interface DemoDb {
   assignments: Assignment[];
   opnames: OpnameRow[];
   items: OpnameItemRow[];
-  nextId: { hist: number; assignment: number; opname: number; item: number };
+  /* ---- data simulasi modul AI (hanya demo; tabel DB = usulan di docs/AI-AMS-Spec.md) ---- */
+  maintenance: MaintenanceRecord[];
+  recommendations: Recommendation[];
+  workOrders: WorkOrder[];
+  purchaseOrders: PurchaseOrder[];
+  documents: AssetDocument[];
+  alerts: AnomalyAlert[];
+  cases: AuditCase[];
+  aiLog: AiActivity[];
+  nextId: {
+    hist: number; assignment: number; opname: number; item: number;
+    maint: number; rec: number; wo: number; doc: number; alert: number; caseId: number; action: number; log: number;
+  };
 }
 
 export const emptyDb = (): DemoDb => ({
-  schema: 1,
+  schema: 2,
   offices: [],
   categories: [],
   users: [],
@@ -31,7 +55,15 @@ export const emptyDb = (): DemoDb => ({
   assignments: [],
   opnames: [],
   items: [],
-  nextId: { hist: 1, assignment: 1, opname: 1, item: 1 },
+  maintenance: [],
+  recommendations: [],
+  workOrders: [],
+  purchaseOrders: [],
+  documents: [],
+  alerts: [],
+  cases: [],
+  aiLog: [],
+  nextId: { hist: 1, assignment: 1, opname: 1, item: 1, maint: 1, rec: 1, wo: 1, doc: 1, alert: 1, caseId: 1, action: 1, log: 1 },
 });
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -49,14 +81,14 @@ export const parseIso = (s: string) => {
 
 export const periodOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 
-const STORAGE_KEY = 'ams-demo-v1';
+const STORAGE_KEY = 'ams-demo-v2';
 
 export function loadDb(): DemoDb | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const db = JSON.parse(raw) as DemoDb;
-    return db?.schema === 1 && Array.isArray(db.assets) ? db : null;
+    return db?.schema === 2 && Array.isArray(db.assets) ? db : null;
   } catch {
     return null;
   }

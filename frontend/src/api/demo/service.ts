@@ -23,6 +23,7 @@ import type {
   User,
 } from '../types';
 import { STATUS_LABEL, RESULT_LABEL } from '../../domain/labels';
+import { DemoAiApi } from './ai-service';
 import { type DemoDb, type OpnameItemRow, type OpnameRow, periodOf, toIso } from './db';
 
 /**
@@ -31,12 +32,16 @@ import { type DemoDb, type OpnameItemRow, type OpnameRow, periodOf, toIso } from
  * kode error (BR-xx) dan pesan dipakai ulang oleh API produksi.
  */
 export class DemoApi implements AmsApi {
+  readonly ai: DemoAiApi;
+
   constructor(
     private readonly db: DemoDb,
     private readonly currentUserId: () => string | null,
     private readonly clock: () => Date = () => new Date(),
     private readonly persist: () => void = () => {},
-  ) {}
+  ) {
+    this.ai = new DemoAiApi(db, currentUserId, clock, persist, (input) => this.createAsset(input));
+  }
 
   /* ------------------------------------------------------------ helpers -- */
 
@@ -76,6 +81,7 @@ export class DemoApi implements AmsApi {
     switch (me.roleCd) {
       case 'ADMIN_GA':
       case 'EXEC':
+      case 'AUDITOR':
         return true;
       case 'PIC':
         return a.officeCd === me.officeCd;
@@ -116,7 +122,7 @@ export class DemoApi implements AmsApi {
   }
 
   private canSeeOpname(o: OpnameRow, me: User) {
-    return me.roleCd === 'ADMIN_GA' || me.roleCd === 'EXEC' || (me.roleCd === 'PIC' && me.officeCd === o.officeCd);
+    return me.roleCd === 'ADMIN_GA' || me.roleCd === 'EXEC' || me.roleCd === 'AUDITOR' || (me.roleCd === 'PIC' && me.officeCd === o.officeCd);
   }
 
   /** Input hasil cek hanya oleh PIC kantor tsb, selama sesi OPEN (SoD, SA §6). */
@@ -335,7 +341,7 @@ export class DemoApi implements AmsApi {
   /* ------------------------------------------------------------- opname -- */
 
   async listOpnames(filter?: { officeCd?: string; status?: OpnameStatus }) {
-    const me = this.require('ADMIN_GA', 'PIC', 'EXEC');
+    const me = this.require('ADMIN_GA', 'PIC', 'EXEC', 'AUDITOR');
     return structuredClone(
       this.db.opnames
         .filter((o) => this.canSeeOpname(o, me))
@@ -346,7 +352,7 @@ export class DemoApi implements AmsApi {
   }
 
   async getOpname(opnameId: number): Promise<OpnameDetail> {
-    const me = this.require('ADMIN_GA', 'PIC', 'EXEC');
+    const me = this.require('ADMIN_GA', 'PIC', 'EXEC', 'AUDITOR');
     const o = this.opname(opnameId);
     if (!this.canSeeOpname(o, me)) throw forbidden();
     const items = this.itemsOf(opnameId)
@@ -471,7 +477,7 @@ export class DemoApi implements AmsApi {
   /* ---------------------------------------------------------- reporting -- */
 
   async dashboardSummary(officeCd?: string): Promise<DashboardSummary> {
-    const me = this.require('ADMIN_GA', 'PIC', 'EXEC');
+    const me = this.require('ADMIN_GA', 'PIC', 'EXEC', 'AUDITOR');
     const office = me.roleCd === 'PIC' ? me.officeCd : officeCd;
     const offices = this.db.offices.map((o) => o.officeCd).filter((o) => !office || o === office);
     const assets = this.db.assets.filter((a) => offices.includes(a.officeCd) && a.status !== 'DISPOSED');
@@ -505,7 +511,7 @@ export class DemoApi implements AmsApi {
 
   /** FR-13: daftar asset minus + user terakhir (dari snapshot). */
   async minusItems(opnameId: number): Promise<MinusItem[]> {
-    const me = this.require('ADMIN_GA', 'PIC', 'EXEC');
+    const me = this.require('ADMIN_GA', 'PIC', 'EXEC', 'AUDITOR');
     const o = this.opname(opnameId);
     if (!this.canSeeOpname(o, me)) throw forbidden();
     return structuredClone(
@@ -520,7 +526,7 @@ export class DemoApi implements AmsApi {
 
   /** FR-13 versi demo: CSV (separator ;) yang bisa dibuka Excel. Versi produksi: xlsx/pdf dari API. */
   async exportVariance(opnameId?: number): Promise<FileDownload> {
-    this.require('ADMIN_GA', 'EXEC');
+    this.require('ADMIN_GA', 'EXEC', 'AUDITOR');
     const sessions = this.db.opnames
       .filter((o) => (opnameId ? o.opnameId === opnameId : o.status !== 'OPEN'))
       .sort((x, y) => y.period.localeCompare(x.period) || x.officeCd.localeCompare(y.officeCd));

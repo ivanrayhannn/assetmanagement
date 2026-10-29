@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { API_MODE } from '../api';
 import { userLabel } from '../auth/auth';
+import { shortOffice } from '../domain/labels';
 import { Icon } from '../components/Icon';
 import { Dialog } from '../components/ui';
 import { TABS_BY_ROLE, useApp, type TabKey } from './AppContext';
@@ -11,8 +12,12 @@ const TAB_LABEL: Record<TabKey, string> = {
   tracking: 'Tracking',
   opname: 'Stock Opname',
   laporan: 'Laporan Selisih',
+  health: 'Kesehatan Asset',
+  documents: 'Dokumen AI',
+  audit: 'Audit & Anomali',
 };
-const TAB_SHORT: Record<TabKey, string> = { dashboard: 'Dashboard', assets: 'Asset', tracking: 'Tracking', opname: 'Opname', laporan: 'Laporan' };
+const AI_TABS: TabKey[] = ['health', 'documents', 'audit'];
+const TAB_SHORT: Record<TabKey, string> = { dashboard: 'Dashboard', assets: 'Asset', tracking: 'Tracking', opname: 'Opname', laporan: 'Laporan', health: 'Kesehatan', documents: 'Dokumen', audit: 'Audit' };
 
 /** App shell responsif: sidebar di desktop, top bar + bottom nav di HP (prototipe). */
 export function Shell({ tab, onTab, children }: { tab: TabKey; onTab: (t: TabKey) => void; children: ReactNode }) {
@@ -24,13 +29,13 @@ export function Shell({ tab, onTab, children }: { tab: TabKey; onTab: (t: TabKey
   const userSelect = (id: string, cls?: string) =>
     mock ? (
       <select id={id} className={cls} value={me.userId} onChange={(e) => switchUser(e.target.value)} aria-label="Masuk sebagai">
-        {(['ADMIN_GA', 'PIC', 'EXEC', 'USER'] as const).map((r) => (
-          <optgroup key={r} label={{ ADMIN_GA: 'Admin GA', PIC: 'PIC Kantor', EXEC: 'Executive Management', USER: 'User / Karyawan' }[r]}>
+        {(['ADMIN_GA', 'PIC', 'EXEC', 'AUDITOR', 'USER'] as const).map((r) => (
+          <optgroup key={r} label={{ ADMIN_GA: 'Admin GA', PIC: 'PIC Kantor', EXEC: 'Executive Management', AUDITOR: 'Internal Auditor', USER: 'User / Karyawan' }[r]}>
             {users
               .filter((u) => u.roleCd === r && u.isActive)
               .map((u) => (
                 <option key={u.userId} value={u.userId}>
-                  {userLabel(u, officeNm(u.officeCd).replace('Kantor ', ''))}
+                  {userLabel(u, shortOffice(officeNm(u.officeCd)))}
                 </option>
               ))}
           </optgroup>
@@ -40,13 +45,30 @@ export function Shell({ tab, onTab, children }: { tab: TabKey; onTab: (t: TabKey
       <span>{me.userNm}</span>
     );
 
+  const btn = (k: TabKey, short: boolean) => (
+    <button key={k} onClick={() => onTab(k)} aria-current={k === tab ? 'page' : undefined}>
+      <Icon name={k} />
+      <span>{short ? TAB_SHORT[k] : TAB_LABEL[k]}</span>
+    </button>
+  );
+  const core = tabs.filter((k) => !AI_TABS.includes(k));
+  const ai = tabs.filter((k) => AI_TABS.includes(k));
   const nav = (short: boolean) =>
-    tabs.map((k) => (
-      <button key={k} onClick={() => onTab(k)} aria-current={k === tab ? 'page' : undefined}>
-        <Icon name={k} />
-        <span>{short ? TAB_SHORT[k] : TAB_LABEL[k]}</span>
-      </button>
-    ));
+    short ? (
+      tabs.map((k) => btn(k, true))
+    ) : (
+      <>
+        {core.map((k) => btn(k, false))}
+        {ai.length > 0 && (
+          <>
+            <div className="navsec">
+              AI Insight <span className="ai-chip">Simulasi</span>
+            </div>
+            {ai.map((k) => btn(k, false))}
+          </>
+        )}
+      </>
+    );
 
   return (
     <>

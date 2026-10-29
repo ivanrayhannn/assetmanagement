@@ -41,24 +41,24 @@ INSERT @a (ASSET_NO, ASSET_NM, BRAND_MODEL, SERIAL_NO, ACQ_DT, USER_ID) VALUES
  ('AST-JKT-PRJ-2025-0001', N'Proyektor Ruang Rapat Lt. 5',   N'Epson EB-X51',                'X5JK2201234',    '2025-05-14', NULL),
  ('AST-JKT-FUR-2024-0001', N'Kursi Kerja Ergonomis',         N'Informa Ergo Chair',          NULL,             '2024-01-15', 'EMP005'),
  ('AST-JKT-FUR-2024-0002', N'Lemari Arsip Besi 4 Laci',      N'Brother Filing Cabinet',      NULL,             '2024-01-15', NULL),
- /* ---- SBY (9) ---- */
- ('AST-SBY-LPT-2025-0001', N'Laptop',                        N'Lenovo ThinkPad E14',         'PF3SB001',       '2025-02-17', 'EMP003'),
- ('AST-SBY-LPT-2025-0002', N'Laptop',                        N'Lenovo ThinkPad E14',         'PF3SB002',       '2025-02-17', 'EMP011'),
- ('AST-SBY-LPT-2026-0001', N'Laptop',                        N'Lenovo ThinkPad E14 Gen 5',   'PF5SB001',       '2026-02-24', 'EMP012'),
- ('AST-SBY-LPT-2026-0002', N'Laptop',                        N'Lenovo ThinkPad E14 Gen 5',   'PF5SB002',       '2026-08-25', NULL),
- ('AST-SBY-MON-2025-0001', N'Monitor 24 inch',               N'LG 24MP400',                  '304NTAB0001',    '2025-02-17', 'EMP011'),
- ('AST-SBY-MON-2025-0002', N'Monitor 24 inch',               N'LG 24MP400',                  '304NTAB0002',    '2025-02-17', 'EMP012'),
- ('AST-SBY-PRN-2024-0001', N'Printer Kantor',                N'Canon imageCLASS MF445dw',    'XNC01234',       '2024-04-08', 'EMP003'),
- ('AST-SBY-PRJ-2025-0001', N'Proyektor Ruang Meeting',       N'BenQ MX560',                  'PDK9A0001',      '2025-06-02', 'EMP013'),
- ('AST-SBY-FUR-2024-0001', N'Meja Kerja L-Shape',            N'Olympic L-Desk',              NULL,             '2024-04-08', 'EMP013'),
- /* ---- BDG (7) ---- */
- ('AST-BDG-LPT-2025-0001', N'Laptop',                        N'Asus ExpertBook B1',          'N7NXBD0001',     '2025-04-07', 'EMP004'),
- ('AST-BDG-LPT-2025-0002', N'Laptop',                        N'Asus ExpertBook B1',          'N7NXBD0002',     '2025-04-07', 'EMP014'),
- ('AST-BDG-LPT-2025-0003', N'Laptop',                        N'Asus ExpertBook B1',          'N7NXBD0003',     '2025-04-07', NULL),
- ('AST-BDG-MON-2025-0001', N'Monitor 24 inch',               N'Samsung S24R350',             'ZZBDG0001',      '2025-04-07', 'EMP014'),
- ('AST-BDG-MON-2025-0002', N'Monitor 24 inch',               N'Samsung S24R350',             'ZZBDG0002',      '2025-04-07', 'EMP015'),
- ('AST-BDG-PRN-2025-0001', N'Printer Kantor',                N'Brother HL-L2375DW',          'E78123BDG',      '2025-04-07', 'EMP004'),
- ('AST-BDG-FUR-2024-0001', N'Kursi Kerja',                   N'Chairman PC 908',             NULL,             '2024-05-06', 'EMP015');
+ /* ---- JKS (9) ---- */
+ ('AST-JKS-LPT-2025-0001', N'Laptop',                        N'Lenovo ThinkPad E14',         'PF3SB001',       '2025-02-17', 'EMP003'),
+ ('AST-JKS-LPT-2025-0002', N'Laptop',                        N'Lenovo ThinkPad E14',         'PF3SB002',       '2025-02-17', 'EMP011'),
+ ('AST-JKS-LPT-2026-0001', N'Laptop',                        N'Lenovo ThinkPad E14 Gen 5',   'PF5SB001',       '2026-02-24', 'EMP012'),
+ ('AST-JKS-LPT-2026-0002', N'Laptop',                        N'Lenovo ThinkPad E14 Gen 5',   'PF5SB002',       '2026-08-25', NULL),
+ ('AST-JKS-MON-2025-0001', N'Monitor 24 inch',               N'LG 24MP400',                  '304NTAB0001',    '2025-02-17', 'EMP011'),
+ ('AST-JKS-MON-2025-0002', N'Monitor 24 inch',               N'LG 24MP400',                  '304NTAB0002',    '2025-02-17', 'EMP012'),
+ ('AST-JKS-PRN-2024-0001', N'Printer Kantor',                N'Canon imageCLASS MF445dw',    'XNC01234',       '2024-04-08', 'EMP003'),
+ ('AST-JKS-PRJ-2025-0001', N'Proyektor Ruang Meeting',       N'BenQ MX560',                  'PDK9A0001',      '2025-06-02', 'EMP013'),
+ ('AST-JKS-FUR-2024-0001', N'Meja Kerja L-Shape',            N'Olympic L-Desk',              NULL,             '2024-04-08', 'EMP013'),
+ /* ---- JKU (7) ---- */
+ ('AST-JKU-LPT-2025-0001', N'Laptop',                        N'Asus ExpertBook B1',          'N7NXBD0001',     '2025-04-07', 'EMP004'),
+ ('AST-JKU-LPT-2025-0002', N'Laptop',                        N'Asus ExpertBook B1',          'N7NXBD0002',     '2025-04-07', 'EMP014'),
+ ('AST-JKU-LPT-2025-0003', N'Laptop',                        N'Asus ExpertBook B1',          'N7NXBD0003',     '2025-04-07', NULL),
+ ('AST-JKU-MON-2025-0001', N'Monitor 24 inch',               N'Samsung S24R350',             'ZZJKU0001',      '2025-04-07', 'EMP014'),
+ ('AST-JKU-MON-2025-0002', N'Monitor 24 inch',               N'Samsung S24R350',             'ZZJKU0002',      '2025-04-07', 'EMP015'),
+ ('AST-JKU-PRN-2025-0001', N'Printer Kantor',                N'Brother HL-L2375DW',          'E78123JKU',      '2025-04-07', 'EMP004'),
+ ('AST-JKU-FUR-2024-0001', N'Kursi Kerja',                   N'Chairman PC 908',             NULL,             '2024-05-06', 'EMP015');
 
 /* Asset dalam kondisi sebelum opname 2026-09 */
 INSERT dbo.TB_M_ASSET (ASSET_NO, ASSET_NM, CATEGORY_CD, BRAND_MODEL, SERIAL_NO, ACQ_DT, OFFICE_CD, USER_ID,

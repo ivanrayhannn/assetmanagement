@@ -1,3 +1,4 @@
+import type { AiApi, AlertCategory, AlertStatus, AssistantQuestion, CaseStatus, DocStatus, DocType, HealthClass, RecommendationStatus, Urgency, WorkOrderStatus } from './ai-types';
 import { ApiError } from './errors';
 import type {
   AmsApi,
@@ -27,10 +28,14 @@ import type {
  * Auth: header Authorization (SSO) atau X-Ams-Mock-User (mock, hanya environment non-produksi).
  */
 export class HttpApi implements AmsApi {
+  readonly ai: AiApi;
+
   constructor(
     private readonly baseUrl: string,
     private readonly authHeaders: () => Promise<Record<string, string>>,
-  ) {}
+  ) {
+    this.ai = httpAi((m, p, b) => this.json(m, p, b), (p) => this.qs(p));
+  }
 
   private async send(method: string, path: string, body?: unknown): Promise<Response> {
     const res = await fetch(`${this.baseUrl}/api/v1${path}`, {
@@ -95,5 +100,42 @@ export class HttpApi implements AmsApi {
     const res = await this.send('GET', `/reports/variance${this.qs({ opnameId, format: 'xlsx' })}`);
     const name = /filename="?([^";]+)"?/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? 'laporan-selisih.xlsx';
     return { fileName: name, blob: await res.blob() };
+  };
+}
+
+/** Endpoint modul AI (/api/v1/ai/...) – usulan kontrak, lihat docs/AI-AMS-Spec.md §10. */
+function httpAi(
+  json: <T>(method: string, path: string, body?: unknown) => Promise<T>,
+  qs: (p: Record<string, string | number | undefined>) => string,
+): AiApi {
+  return {
+    listHealth: (f?: { officeCd?: string; healthClass?: HealthClass }) => json('GET', `/ai/health${qs({ office: f?.officeCd, class: f?.healthClass })}`),
+    getHealth: (assetNo: string) => json('GET', `/ai/health/${encodeURIComponent(assetNo)}`),
+    generateRecommendations: async () => (await json<{ created: number }>('POST', '/ai/recommendations/generate')).created,
+    listRecommendations: (status?: RecommendationStatus) => json('GET', `/ai/recommendations${qs({ status })}`),
+    decideRecommendation: (id: number, decision: 'ACCEPT' | 'REJECT' | 'MODIFY', input: { note?: string; action?: string; urgency?: Urgency; targetDt?: string; assignee?: string }) =>
+      json('POST', `/ai/recommendations/${id}/decision`, { decision, ...input }),
+    listWorkOrders: (status?: WorkOrderStatus) => json('GET', `/work-orders${qs({ status })}`),
+    approveWorkOrder: (id: number, approve: boolean, note?: string) => json('POST', `/work-orders/${id}/${approve ? 'approve' : 'reject'}`, { note }),
+    completeWorkOrder: (id: number, input: { actualCost: number; outcome: string; downtimeHours: number }) => json('POST', `/work-orders/${id}/complete`, input),
+    docTemplates: async () => [],
+    uploadDocument: (file: { name: string; size: number; type: string; hash: string }) => json('POST', '/documents', file), // produksi: multipart + Idempotency-Key = hash
+    listDocuments: (f?: { status?: DocStatus; assetNo?: string }) => json('GET', `/documents${qs({ status: f?.status, assetNo: f?.assetNo })}`),
+    getDocument: (id: number) => json('GET', `/documents/${id}`),
+    updateDocument: (id: number, input: { docType?: DocType; fields?: Record<string, string | null> }) => json('PATCH', `/documents/${id}`, input),
+    reviewDocument: (id: number, approve: boolean, note?: string) => json('POST', `/documents/${id}/${approve ? 'approve' : 'reject'}`, { note }),
+    docMetrics: () => json('GET', '/documents/metrics'),
+    runDetection: () => json('POST', '/audit/detections/run'),
+    listAlerts: (f?: { category?: AlertCategory; status?: AlertStatus }) => json('GET', `/audit/alerts${qs({ category: f?.category, status: f?.status })}`),
+    getAlert: (id: number) => json('GET', `/audit/alerts/${id}`),
+    dismissAlert: (id: number, reason: string) => json('POST', `/audit/alerts/${id}/dismiss`, { reason }),
+    createCase: (alertId: number, investigator: string) => json('POST', '/audit/cases', { alertId, investigator }),
+    listCases: () => json('GET', '/audit/cases'),
+    getCase: (id: number) => json('GET', `/audit/cases/${id}`),
+    updateCase: (id: number, input: { status?: CaseStatus; note?: string; noteKind?: 'FINDING' | 'CLARIFICATION' }) => json('PATCH', `/audit/cases/${id}`, input),
+    addCorrectiveAction: (id: number, input: { description: string; ownerUserId: string; dueDt: string }) => json('POST', `/audit/cases/${id}/actions`, input),
+    completeCorrectiveAction: (id: number, actionId: number) => json('POST', `/audit/cases/${id}/actions/${actionId}/complete`),
+    ask: (alertId: number, q: AssistantQuestion) => json('POST', `/audit/alerts/${alertId}/assistant`, { question: q }),
+    activity: (module?: 'PM' | 'DOC' | 'AUDIT') => json('GET', `/ai/activity${qs({ module })}`),
   };
 }

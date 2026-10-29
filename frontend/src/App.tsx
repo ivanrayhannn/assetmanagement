@@ -6,6 +6,9 @@ import { AssetListPage } from './features/assets/AssetListPage';
 import { TrackingPage } from './features/tracking/TrackingPage';
 import { OpnamePage } from './features/opname/OpnamePage';
 import { VariancePage } from './features/reports/VariancePage';
+import { AuditPage } from './features/ai/AuditPage';
+import { DocumentsPage } from './features/ai/DocumentsPage';
+import { HealthPage } from './features/ai/HealthPage';
 
 /* Routing berbasis hash (#/opname) agar jalan di GitHub Pages & IIS tanpa rewrite rule. */
 const readHash = () => window.location.hash.replace(/^#\/?/, '') as TabKey;
@@ -42,6 +45,9 @@ export default function App() {
       {current === 'tracking' && <TrackingPage />}
       {current === 'opname' && <OpnamePage onGo={go} />}
       {current === 'laporan' && <VariancePage onGo={go} />}
+      {current === 'health' && <HealthPage />}
+      {current === 'documents' && <DocumentsPage />}
+      {current === 'audit' && <AuditPage />}
     </Shell>
   );
 }

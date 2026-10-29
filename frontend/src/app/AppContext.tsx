@@ -3,14 +3,15 @@ import type { Backend } from '../api';
 import { errorMessage } from '../api/errors';
 import type { AmsApi, Category, Office, RoleCd, User } from '../api/types';
 
-export type TabKey = 'dashboard' | 'assets' | 'tracking' | 'opname' | 'laporan';
+export type TabKey = 'dashboard' | 'assets' | 'tracking' | 'opname' | 'laporan' | 'health' | 'documents' | 'audit';
 
 /** Menu per role (FSD §2 role matrix, mengikuti prototipe). */
 export const TABS_BY_ROLE: Record<RoleCd, TabKey[]> = {
-  ADMIN_GA: ['dashboard', 'assets', 'tracking', 'opname', 'laporan'],
-  PIC: ['dashboard', 'assets', 'tracking', 'opname'],
+  ADMIN_GA: ['dashboard', 'assets', 'tracking', 'opname', 'laporan', 'health', 'documents'],
+  PIC: ['dashboard', 'assets', 'tracking', 'opname', 'health', 'documents'],
   USER: ['tracking'],
-  EXEC: ['dashboard', 'assets', 'tracking', 'laporan'],
+  EXEC: ['dashboard', 'assets', 'tracking', 'laporan', 'health', 'audit'],
+  AUDITOR: ['audit', 'dashboard', 'assets', 'laporan'],
 };
 
 interface AppState {

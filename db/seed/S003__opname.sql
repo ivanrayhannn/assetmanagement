@@ -4,11 +4,11 @@
      -> approve + update asset (BR-07) -> refresh read model.
 
    Sesi:
-     2026-03, 2026-06  JKT/SBY/BDG  semua SESUAI (data tren FR-12)
+     2026-03, 2026-06  JKT/JKS/JKU  semua SESUAI (data tren FR-12)
      2026-09  JKT  17 sistem, 1 TIDAK_DITEMUKAN (proyektor), 1 BEDA_LOKASI -> minus 1
-     2026-09  SBY   9 sistem, 1 TIDAK_DITEMUKAN (monitor), 1 PLUS (kursi tanpa label) -> minus 1, plus 1
-     2026-09  BDG   7 sistem, 1 RUSAK (printer) -> minus 0
-     2026-10  BDG  OPEN, sebagian sudah dicek (contoh sesi berjalan; BDG ter-freeze BR-04)
+     2026-09  JKS   9 sistem, 1 TIDAK_DITEMUKAN (monitor), 1 PLUS (kursi tanpa label) -> minus 1, plus 1
+     2026-09  JKU   7 sistem, 1 RUSAK (printer) -> minus 0
+     2026-10  JKU  OPEN, sebagian sudah dicek (contoh sesi berjalan; JKU ter-freeze BR-04)
 
    Snapshot berisi asset kantor yang statusnya bukan MISSING/DISPOSED.
    ============================================================================= */
@@ -31,15 +31,15 @@ DECLARE @sessions TABLE (
 
 INSERT @sessions (OFFICE_CD, PERIOD, PIC, CREATED_DT, SUBMITTED_DT, APPROVED_DT) VALUES
  ('JKT', '2026-03', 'EMP002', '2026-03-02 08:00', '2026-03-05 16:00', '2026-03-06 10:00'),
- ('SBY', '2026-03', 'EMP003', '2026-03-02 08:00', '2026-03-05 15:00', '2026-03-06 10:30'),
- ('BDG', '2026-03', 'EMP004', '2026-03-02 08:00', '2026-03-04 16:00', '2026-03-06 11:00'),
+ ('JKS', '2026-03', 'EMP003', '2026-03-02 08:00', '2026-03-05 15:00', '2026-03-06 10:30'),
+ ('JKU', '2026-03', 'EMP004', '2026-03-02 08:00', '2026-03-04 16:00', '2026-03-06 11:00'),
  ('JKT', '2026-06', 'EMP002', '2026-06-01 08:00', '2026-06-04 16:00', '2026-06-05 10:00'),
- ('SBY', '2026-06', 'EMP003', '2026-06-01 08:00', '2026-06-04 15:00', '2026-06-05 10:30'),
- ('BDG', '2026-06', 'EMP004', '2026-06-01 08:00', '2026-06-03 16:00', '2026-06-05 11:00'),
+ ('JKS', '2026-06', 'EMP003', '2026-06-01 08:00', '2026-06-04 15:00', '2026-06-05 10:30'),
+ ('JKU', '2026-06', 'EMP004', '2026-06-01 08:00', '2026-06-03 16:00', '2026-06-05 11:00'),
  ('JKT', '2026-09', 'EMP002', '2026-09-01 08:00', '2026-09-04 16:00', '2026-09-07 10:00'),
- ('SBY', '2026-09', 'EMP003', '2026-09-01 08:00', '2026-09-04 15:00', '2026-09-07 10:30'),
- ('BDG', '2026-09', 'EMP004', '2026-09-01 08:00', '2026-09-03 16:00', '2026-09-07 11:00'),
- ('BDG', '2026-10', 'EMP004', '2026-10-26 08:00', NULL,               NULL);
+ ('JKS', '2026-09', 'EMP003', '2026-09-01 08:00', '2026-09-04 15:00', '2026-09-07 10:30'),
+ ('JKU', '2026-09', 'EMP004', '2026-09-01 08:00', '2026-09-03 16:00', '2026-09-07 11:00'),
+ ('JKU', '2026-10', 'EMP004', '2026-10-26 08:00', NULL,               NULL);
 
 /* Hasil cek yang bukan SESUAI */
 DECLARE @findings TABLE (
@@ -51,11 +51,11 @@ INSERT @findings VALUES
      N'Tidak ada di ruang rapat Lt. 5 maupun gudang; terakhir dipakai acara townhall Agustus'),
  ('JKT', '2026-09', 'AST-JKT-MON-2025-0002', 'BEDA_LOKASI',     'EMP008', NULL,  NULL,
      N'Monitor dipakai Fajar (IT) sejak Dewi pindah meja'),
- ('SBY', '2026-09', 'AST-SBY-MON-2025-0002', 'TIDAK_DITEMUKAN', NULL,     NULL,  NULL,
+ ('JKS', '2026-09', 'AST-JKS-MON-2025-0002', 'TIDAK_DITEMUKAN', NULL,     NULL,  NULL,
      N'Indah menyatakan monitor dipinjam tim event dan belum kembali'),
- ('SBY', '2026-09', NULL,                    'PLUS',            NULL,     'FUR', N'Kursi kerja hitam tanpa label nomor asset di ruang Sales',
+ ('JKS', '2026-09', NULL,                    'PLUS',            NULL,     'FUR', N'Kursi kerja hitam tanpa label nomor asset di ruang Sales',
      N'Perlu diregistrasi oleh Admin GA'),
- ('BDG', '2026-09', 'AST-BDG-PRN-2025-0001', 'RUSAK',           NULL,     NULL,  NULL,
+ ('JKU', '2026-09', 'AST-JKU-PRN-2025-0001', 'RUSAK',           NULL,     NULL,  NULL,
      N'Paper feed macet, tidak bisa mencetak');
 
 DECLARE @seq int = 1, @max int = (SELECT MAX(SEQ) FROM @sessions);

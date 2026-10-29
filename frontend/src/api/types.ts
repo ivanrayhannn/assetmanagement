@@ -1,6 +1,7 @@
 /* Kontrak data AMS API (/api/v1, JSON camelCase). Kode status mengikuti database (UPPER_SNAKE). */
+import type { AiApi } from './ai-types';
 
-export type RoleCd = 'ADMIN_GA' | 'PIC' | 'USER' | 'EXEC';
+export type RoleCd = 'ADMIN_GA' | 'PIC' | 'USER' | 'EXEC' | 'AUDITOR';
 export type AssetStatus = 'AVAILABLE' | 'IN_USE' | 'UNDER_REPAIR' | 'MISSING' | 'DISPOSED';
 export type AssetCondition = 'BAIK' | 'RUSAK_RINGAN' | 'RUSAK_BERAT';
 export type HistoryAction = 'REGISTER' | 'ASSIGN' | 'TRANSFER' | 'RETURN' | 'STATUS_CHANGE';
@@ -201,6 +202,9 @@ export interface FileDownload {
 
 /** Semua operasi AMS. Implementasi: DemoApi (browser) dan HttpApi (/api/v1). */
 export interface AmsApi {
+  /** Modul AI: predictive maintenance, document intelligence, audit & anomaly (lihat ai-types.ts) */
+  readonly ai: AiApi;
+
   listOffices(): Promise<Office[]>;
   listCategories(): Promise<Category[]>;
   listUsers(officeCd?: string): Promise<User[]>;

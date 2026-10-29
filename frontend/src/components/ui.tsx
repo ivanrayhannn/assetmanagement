@@ -37,7 +37,7 @@ export const PageHead = ({ title, desc, hello, actions }: { title: string; desc?
 );
 
 export const Banner = ({ tone, children }: { tone: 'bad' | 'good' | 'info'; children: ReactNode }) => (
-  <div className={`banner ${tone}`} role={tone === 'bad' ? 'alert' : undefined}>
+  <div className={`banner ${tone === 'info' ? 'tip' : tone}`} role={tone === 'bad' ? 'alert' : undefined}>
     <Icon name={tone === 'bad' ? 'alert' : tone === 'good' ? 'check' : 'info'} />
     <div>{children}</div>
   </div>

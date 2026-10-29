@@ -68,7 +68,7 @@ erDiagram
 | --- | --- |
 | `TB_M_ASSET.STATUS` | `AVAILABLE`, `IN_USE`, `UNDER_REPAIR`, `MISSING`, `DISPOSED` |
 | `TB_M_ASSET.CONDITION` | `BAIK`, `RUSAK_RINGAN`, `RUSAK_BERAT` |
-| `TB_M_USER.ROLE_CD` | `ADMIN_GA`, `PIC`, `USER`, `EXEC` |
+| `TB_M_USER.ROLE_CD` | `ADMIN_GA`, `PIC`, `USER`, `EXEC`, `AUDITOR` (V005) |
 | `TB_T_ASSET_HISTORY.ACTION` | `REGISTER`, `ASSIGN`, `TRANSFER`, `RETURN`, `STATUS_CHANGE` |
 | `TB_T_ASSIGNMENT.STATUS` | `PENDING`, `CONFIRMED`, `REJECTED`, `CANCELLED` |
 | `TB_T_OPNAME_H.STATUS` | `OPEN`, `SUBMITTED`, `APPROVED` |
@@ -97,22 +97,23 @@ Kondisi akhir sesuai contoh response `GET /dashboard/summary` di SA §4.
 | Kantor | Asset | In Use | Available | Under Repair | Missing | Opname 2026-09 |
 | --- | --- | --- | --- | --- | --- | --- |
 | JKT | 17 | 13 | 3 | 0 | 1 | Sistem 17, Fisik 16, Minus 1 (merah) |
-| SBY | 9 | 7 | 1 | 0 | 1 | Sistem 9, Fisik 8, Minus 1, Plus 1 (merah) |
-| BDG | 7 | 5 | 1 | 1 | 0 | Sistem 7, Fisik 7, Minus 0 |
+| JKS | 9 | 7 | 1 | 0 | 1 | Sistem 9, Fisik 8, Minus 1, Plus 1 (merah) |
+| JKU | 7 | 5 | 1 | 1 | 0 | Sistem 7, Fisik 7, Minus 0 |
 | **Total** | **33** | **25** | **5** | **1** | **2** | |
 
 - Tren FR-12: sesi 2026-03 dan 2026-06 di ketiga kantor (semua sesuai).
-- **BDG punya sesi 2026-10 berstatus OPEN** (4 dari 7 asset sudah dicek), jadi mutasi asset BDG sedang di-freeze (BR-04).
+- **JKU punya sesi 2026-10 berstatus OPEN** (4 dari 7 asset sudah dicek), jadi mutasi asset JKU sedang di-freeze (BR-04).
 - `AST-JKT-LPT-2026-0003` punya assignment PENDING ke EMP009 (menunggu konfirmasi user).
 - EMP010 (resign) masih memegang `AST-JKT-LPT-2024-0003` → muncul di `VW_ASSET_TO_RECALL`.
 
 | User | Nama | Role | Kantor |
 | --- | --- | --- | --- |
 | EMP001 | Rina Wulandari | ADMIN_GA | JKT |
-| EMP002 / EMP003 / EMP004 | Budi / Sari / Agus | PIC | JKT / SBY / BDG |
+| EMP002 / EMP003 / EMP004 | Budi / Sari / Agus | PIC | JKT / JKS / JKU |
 | EMP005 | Hendra Wijaya | EXEC | JKT |
-| EMP006–EMP015 | karyawan | USER | JKT, SBY, BDG |
+| EMP016 | Ratna Kusuma | AUDITOR (V005/S004) | JKT |
+| EMP006–EMP015 | karyawan | USER | JKT, JKS, JKU |
 
 Data siap untuk UAT: TC-01 (registrasi JKT-LPT → nomor 0004), TC-02 (assign `AST-JKT-MON-2025-0004`),
-TC-03 (assign `AST-JKT-PRJ-2025-0001` yang Missing), TC-05 (mutasi JKT → SBY), TC-06 (sesi baru JKT 2026-10),
+TC-03 (assign `AST-JKT-PRJ-2025-0001` yang Missing), TC-05 (mutasi JKT → JKS), TC-06 (sesi baru JKT 2026-10),
 TC-09 (login EMP006, buka asset milik EMP007).

@@ -33,6 +33,7 @@ export const ROLE_LABEL: Record<RoleCd, string> = {
   PIC: 'PIC Kantor',
   USER: 'User',
   EXEC: 'Executive',
+  AUDITOR: 'Internal Auditor',
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -50,7 +51,7 @@ export const dateTimeLabel = (iso: string) => {
 };
 export const dateLabel = (iso: string) => dateTimeLabel(iso.slice(0, 10));
 
-export const shortOffice = (nm: string) => nm.replace('Kantor Pusat ', '').replace('Kantor Cabang ', '').replace('Cabang ', '');
+export const shortOffice = (nm: string) => nm.replace(/^Kantor (Pusat |Cabang )?/, '');
 
 export const initials = (n: string) =>
   n

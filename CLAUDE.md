@@ -9,7 +9,7 @@ dengan kondisi fisik lewat stock opname berkala. Selisih minus otomatis masuk la
 - Arsitektur & API: `docs/Solution-Architecture-AMS.md`
 - Prototipe UI: `docs/asset-management.html`
 - Use case: UC-01 Registrasi & Assignment (termasuk mutasi), UC-02 Stock Opname & Laporan Selisih
-- Kantor: JKT, SBY, BDG. Kategori: LPT, MON, PRN, PRJ, FUR.
+- Kantor (lingkup DKI Jakarta): JKT Jakarta Pusat (kantor pusat), JKS Jakarta Selatan, JKU Jakarta Utara. Kategori: LPT, MON, PRN, PRJ, FUR.
 
 ## Tech stack
 
@@ -79,11 +79,21 @@ Keputusan tambahan:
 | `ADMIN_GA` | `AMS_ADMIN_GA` | Semua kantor, satu-satunya yang mengubah master asset & approve opname |
 | `PIC` | `AMS_PIC_<KANTOR>` | Hanya kantornya; input hasil cek opname |
 | `USER` | default | Hanya asset dengan `USER_ID` = dirinya; konfirmasi terima |
-| `EXEC` | `AMS_EXEC` | Read-only semua kantor, dashboard & laporan |
+| `EXEC` | `AMS_EXEC` | Read-only semua kantor, dashboard & laporan; menyetujui work order (modul AI) |
+| `AUDITOR` | `AMS_AUDITOR` | Read-only semua kantor; mengelola alert & kasus audit (modul AI). Admin GA tidak punya akses audit |
 
 - Otorisasi dicek di API (policy per endpoint + filter row-level di service), bukan hanya disembunyikan di UI.
-- Dev: mock auth memilih user seed (EMP001 Admin GA, EMP002–004 PIC, EMP005 Executive, EMP006+ User).
+- Dev: mock auth memilih user seed (EMP001 Admin GA, EMP002–004 PIC, EMP005 Executive, EMP006–015 User, EMP016 Auditor).
   Implementasi di balik interface yang sama dengan AD SSO, ditukar lewat konfigurasi.
+
+## Modul AI (simulasi v0.1)
+
+- Spesifikasi: `docs/AI-AMS-Spec.md` (A Predictive Maintenance, B Document Intelligence, C Audit & Anomaly; rule, API, data model usulan, UAT, TBD).
+- Saat ini **hanya di frontend demo**: `src/api/ai-types.ts`, `src/api/demo/ai-service.ts` (+ `ai-docs.ts`, test `ai-service.test.ts`), UI `src/features/ai/`.
+  Tabel DB AI belum dibuat (usulan di spec §6); data simulasi AI (maintenance, PO, dokumen) hanya ada di seed demo.
+- Guardrail wajib: tidak ada probabilitas/prediksi tanpa model tervalidasi; skor risiko ≠ probabilitas; isi dokumen = input tidak tepercaya;
+  tidak ada merge/hapus/eskalasi otomatis; keputusan manusia selalu beralasan & tercatat; setiap hasil membawa versi aturan/model;
+  keluaran AI di UI selalu ditandai "AI · simulasi" agar beda dari data terverifikasi. Jangan menyebut fitur ini memakai ML/OCR/LLM sampai benar-benar ada.
 
 ## Konvensi API
 

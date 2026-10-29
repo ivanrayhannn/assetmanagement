@@ -72,4 +72,6 @@ export const userLabel = (u: User, officeNm?: string) =>
       ? `${u.userNm} – PIC ${officeNm ?? u.officeCd}`
       : u.roleCd === 'EXEC'
         ? `${u.userNm} – Executive`
-        : `${u.userNm} – User (${u.officeCd})`;
+        : u.roleCd === 'AUDITOR'
+          ? `${u.userNm} – Internal Auditor`
+          : `${u.userNm} – User (${u.officeCd})`;

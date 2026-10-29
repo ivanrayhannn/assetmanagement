@@ -5,6 +5,7 @@ import type { AssetCondition, AssetDetail, AssetHistory } from '../../api/types'
 import { useApp, useLoad } from '../../app/AppContext';
 import { AssetTag, Dialog, type DialogAction, Loading, StatusPill, Who } from '../../components/ui';
 import { dateLabel, dateTimeLabel, STATUS_LABEL } from '../../domain/labels';
+import { AiChip, ClassPill, HealthBadge } from '../ai/common';
 
 const today = () => toIso(new Date()).slice(0, 10);
 
@@ -141,7 +142,7 @@ export function AssetDetailDialog({ assetNo, onClose }: { assetNo: string; onClo
             <Who name={u?.userNm ?? null} sub={`${u?.dept ? u.dept + ', ' : ''}${officeNm(a.officeCd)}`} />
           </div>
           {p && (
-            <div className="banner info" style={{ marginTop: 12, marginBottom: 0 }}>
+            <div className="banner tip" style={{ marginTop: 12, marginBottom: 0 }}>
               <div>
                 <b>Menunggu konfirmasi {userNm(p.toUser)}</b> ({p.assignType === 'ASSIGN' ? 'assign' : 'mutasi'} ke {officeNm(p.toOffice)}, diminta {dateTimeLabel(p.requestedDt)}).
                 {isAdmin && (
@@ -161,6 +162,7 @@ export function AssetDetailDialog({ assetNo, onClose }: { assetNo: string; onClo
             <div><span>Tanggal perolehan</span><b>{dateLabel(a.acqDt)}</b></div>
             <div><span>Kondisi</span><b>{{ BAIK: 'Baik', RUSAK_RINGAN: 'Rusak ringan', RUSAK_BERAT: 'Rusak berat' }[a.condition]}</b></div>
           </div>
+          {me.roleCd !== 'USER' && <AiInsight assetNo={a.assetNo} />}
           <h3 style={{ fontSize: 'var(--text-sm)', margin: '0 0 12px', fontWeight: 800 }}>Riwayat</h3>
           <ul className="timeline">
             {a.history.map((h) => (
@@ -249,5 +251,35 @@ function AssignDialog({ asset: a, onClose }: { asset: AssetDetail; onClose: () =
       </div>
       {err && <p className="err">{err}</p>}
     </Dialog>
+  );
+}
+
+/** Ringkasan AI di detail asset: skor kesehatan & dokumen terkait (dibedakan dari data terverifikasi). */
+function AiInsight({ assetNo }: { assetNo: string }) {
+  const { api } = useApp();
+  const { data } = useLoad(async () => {
+    const [h, docs] = await Promise.all([api.ai.getHealth(assetNo).catch(() => null), api.ai.listDocuments({ assetNo }).catch(() => [])]);
+    return { h, docs };
+  }, [assetNo]);
+  if (!data?.h) return null;
+  const { h, docs } = data;
+  return (
+    <div className="ai-box" style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <AiChip>Kesehatan · {h.ruleVersion}</AiChip>
+        <HealthBadge score={h.score} cls={h.healthClass} />
+        <ClassPill cls={h.healthClass} />
+      </div>
+      {h.factors.length > 0 && (
+        <p className="muted" style={{ margin: '8px 0 0', fontSize: 'var(--text-xs)' }}>
+          {h.factors.map((f) => `${f.label} (${f.impact})`).join(' · ')}
+        </p>
+      )}
+      {docs.length > 0 && (
+        <p style={{ margin: '8px 0 0', fontSize: 'var(--text-xs)' }}>
+          Dokumen: {docs.map((d) => `${d.docNo} ${d.fileName} (${d.status === 'APPROVED' ? 'terverifikasi' : 'belum dikonfirmasi'})`).join(', ')}
+        </p>
+      )}
+    </div>
   );
 }
